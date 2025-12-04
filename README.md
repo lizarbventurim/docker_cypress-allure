@@ -4,8 +4,11 @@ Este repositório contém um Dockerfile que cria uma imagem Docker, configurada 
 
 ## Funcionalidades
 
-- Baseada em **Cypress/latest**
+- Baseada em **Cypress/browsers:latest**
+- Instalação do **Podman** para gerenciamento de contêineres
 - Instalação do **Allure Commandline** para geração de relatórios
+- Configuração completa com dependências GUI (GTK, LibGBM, etc.)
+- Suporte a browsers com Xvfb para execução headless
 - Configurada para executar um script personalizado `entrypoint.sh` ao iniciar o contêiner
 
 ## Pré-requisitos
@@ -16,15 +19,18 @@ Este repositório contém um Dockerfile que cria uma imagem Docker, configurada 
 
 Para construir a imagem Docker, utilize o seguinte comando no diretório onde o Dockerfile está localizado:
 
-docker build -t cypress-allure-image .
+```bash
+docker build -t cypress-allure:latest .
+```
 
 
 ## Como executar o contêiner
 
 Uma vez que a imagem esteja construída, você pode executar o contêiner com o seguinte comando:
 
-
-docker run -it -p 8080:8080 cypress-allure-image
+```bash
+docker run -it -p 8080:8080 cypress-allure:latest
+```
 
 
 O contêiner expõe a porta 8080, que pode ser mapeada para a máquina host. Certifique-se de que o entrypoint.sh está configurado corretamente para iniciar a aplicação ou testes desejados.
@@ -38,20 +44,42 @@ O contêiner expõe a porta 8080, que pode ser mapeada para a máquina host. Cer
 
 ## Instalações Incluídas
 
-	•	Java (default-jdk)
-	•	Allure Commandline (instalado globalmente via npm)
-	•	Outras dependências: curl, vim, git
+- **Podman** - Gerenciamento de contêineres
+- **Java (default-jdk)** - Runtime Java
+- **Node.js e npm** - Runtime JavaScript
+- **Cypress** - Framework de testes E2E
+- **Allure Commandline** - Geração de relatórios (instalado globalmente via npm)
+- **Dependências GUI**: libgtk2.0-0, libgtk-3-0, libgbm-dev, libnotify-dev, libnss3, libxss1, libasound2, libxtst6
+- **Ferramentas X11**: xauth, xvfb (para execução headless)
+- **Utilitários**: curl, vim, git, wget, gnupg2, ca-certificates
 
 
 
 ## Comandos Úteis
 
-	•	Verificar versão do Node.js: node --version
-	•	Verificar versão do npm: npm --version
-	•	Verificar versão do Cypress: npx cypress version
-	•	Instalar dependências do projeto: npm install
-	•	Executar testes com Cypress: npx cypress run
-	•	Gerar relatórios com Allure: allure generate
+```bash
+# Verificar versões instaladas
+node --version
+npm --version
+java -version
+npx cypress version
+
+# Instalar dependências do projeto
+npm install
+
+# Executar testes com Cypress
+npx cypress run
+
+# Gerar relatórios com Allure
+allure generate
+allure serve
+
+# Atualizar lista de browsers suportados
+npx browserslist@latest
+
+# Verificar instalação do Podman
+podman --version
+```
 
 ## Personalização
 
