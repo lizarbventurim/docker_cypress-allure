@@ -1,0 +1,7 @@
+.git
+.github
+example
+node_modules
+allure-results
+allure-report
+*.md

@@ -1,96 +1,91 @@
-# Cypress Docker Image with Allure Report
+# Cypress + Allure em Docker
 
-Este repositório contém um Dockerfile que cria uma imagem Docker, configurada para executar testes Cypress com relatórios do Allure. 
+[![Build e teste da imagem](https://github.com/lizarbventurim/docker_cypress-allure/actions/workflows/docker.yml/badge.svg)](https://github.com/lizarbventurim/docker_cypress-allure/actions/workflows/docker.yml)
 
-## Funcionalidades
+Imagem Docker para rodar testes **Cypress** e gerar o relatório **Allure** com um único comando, sem instalar Node, Java, navegadores ou Allure na máquina. Serve para a sua máquina e para pipelines de CI.
 
-- Baseada em **Cypress/browsers:latest**
-- Instalação do **Podman** para gerenciamento de contêineres
-- Instalação do **Allure Commandline** para geração de relatórios
-- Configuração completa com dependências GUI (GTK, LibGBM, etc.)
-- Suporte a browsers com Xvfb para execução headless
-- Configurada para executar um script personalizado `entrypoint.sh` ao iniciar o contêiner
+## O que vem na imagem
 
-## Pré-requisitos
+- [`cypress/included`](https://github.com/cypress-io/cypress-docker-images/tree/master/included) com Cypress, Node.js e navegadores (Chrome, Firefox e Edge)
+- Java (JRE) e [Allure Commandline](https://allurereport.org/) para gerar o relatório
+- `entrypoint.sh`: instala as dependências do projeto, roda `cypress run` e **sempre gera o relatório**, mesmo quando há testes com falha, mantendo o código de saída do Cypress
 
-- Docker instalado no sistema
+As versões são fixas (Cypress e Allure) para que o build seja reproduzível, e o Dependabot abre PRs semanais para atualizá-las.
 
-## Como construir a imagem
-
-Para construir a imagem Docker, utilize o seguinte comando no diretório onde o Dockerfile está localizado:
+## Como usar
 
 ```bash
-docker build -t cypress-allure:latest .
+# construir a imagem
+docker build -t cypress-allure .
+
+# rodar os testes de um projeto Cypress (na pasta do projeto)
+docker run --rm -v "$PWD":/e2e cypress-allure
+
+# passar argumentos para o "cypress run"
+docker run --rm -v "$PWD":/e2e cypress-allure --browser chrome --spec "cypress/e2e/login/**"
 ```
 
-
-## Como executar o contêiner
-
-Uma vez que a imagem esteja construída, você pode executar o contêiner com o seguinte comando:
+O relatório fica em `allure-report/` no seu projeto. Para abrir:
 
 ```bash
-docker run -it -p 8080:8080 cypress-allure:latest
+npx allure-commandline open allure-report
 ```
 
-
-O contêiner expõe a porta 8080, que pode ser mapeada para a máquina host. Certifique-se de que o entrypoint.sh está configurado corretamente para iniciar a aplicação ou testes desejados.
-
-## Estrutura do projeto
-
-	•	Dockerfile: Define as instruções para construir a imagem.
-	•	entrypoint.sh: Script de entrada personalizado que será executado quando o contêiner iniciar.
-	•	app/: Diretório de exemplo que pode conter os arquivos do seu proje
-    to.
-
-## Instalações Incluídas
-
-- **Podman** - Gerenciamento de contêineres
-- **Java (default-jdk)** - Runtime Java
-- **Node.js e npm** - Runtime JavaScript
-- **Cypress** - Framework de testes E2E
-- **Allure Commandline** - Geração de relatórios (instalado globalmente via npm)
-- **Dependências GUI**: libgtk2.0-0, libgtk-3-0, libgbm-dev, libnotify-dev, libnss3, libxss1, libasound2, libxtst6
-- **Ferramentas X11**: xauth, xvfb (para execução headless)
-- **Utilitários**: curl, vim, git, wget, gnupg2, ca-certificates
-
-
-
-## Comandos Úteis
+Com Docker Compose, a pasta `example/` é usada como projeto:
 
 ```bash
-# Verificar versões instaladas
-node --version
-npm --version
-java -version
-npx cypress version
-
-# Instalar dependências do projeto
-npm install
-
-# Executar testes com Cypress
-npx cypress run
-
-# Gerar relatórios com Allure
-allure generate
-allure serve
-
-# Atualizar lista de browsers suportados
-npx browserslist@latest
-
-# Verificar instalação do Podman
-podman --version
+docker compose run --rm cypress
 ```
 
-## Personalização
+## Configurar o Allure no seu projeto
 
-Você pode modificar o entrypoint.sh para executar diferentes comandos ou scripts no início da execução do contêiner, de acordo com as necessidades do seu projeto.
+A versão do `cypress` no `package.json` do projeto precisa ser **a mesma da imagem** (argumento `CYPRESS_VERSION`), para o Cypress reaproveitar o binário já instalado.
+
+```bash
+npm install -D allure-cypress
+```
+
+`cypress.config.js`:
+
+```js
+const { defineConfig } = require("cypress");
+
+module.exports = defineConfig({
+  e2e: {
+    async setupNodeEvents(on, config) {
+      const { allureCypress } = await import("allure-cypress/reporter");
+      allureCypress(on, config, { resultsDir: "allure-results" });
+      return config;
+    },
+  },
+});
+```
+
+`cypress/support/e2e.js`:
+
+```js
+import "allure-cypress";
+```
+
+O diretório [`example/`](example) tem um projeto mínimo já configurado.
+
+## Variáveis de ambiente
+
+| Variável | Padrão | O que faz |
+| --- | --- | --- |
+| `ALLURE_RESULTS_DIR` | `allure-results` | pasta com os resultados do Allure |
+| `ALLURE_REPORT_DIR` | `allure-report` | pasta do relatório HTML |
+| `SKIP_INSTALL` | `false` | `true` não instala as dependências do projeto |
+| `SKIP_REPORT` | `false` | `true` não gera o relatório |
+
+Para outra versão do Cypress: `docker build --build-arg CYPRESS_VERSION=x.y.z -t cypress-allure .`
+
+## Integração contínua
+
+O workflow [`docker.yml`](.github/workflows/docker.yml) constrói a imagem, confere as versões instaladas, executa o projeto de exemplo dentro dela, verifica que o relatório foi gerado e o publica como artefato.
 
 ## Autor
 
-Este Dockerfile foi criado por [Lizarb Venturim] (lizarbpacheco@gmail.com).
+**Lizarb Venturim**, Senior QA Engineer · [LinkedIn](https://www.linkedin.com/in/lizarbventurim/) · [Portfólio](https://lizarb.venturim.me)
 
-## Licença
-
-Este projeto está licenciado sob a MIT License.
-
-Este `README.md` fornece uma visão geral do projeto, explicando como construir e executar o contêiner, bem como descrevendo as instalações e dependências incluídas. Certifique-se de ajustar as instruções conforme necessário para atender às necessidades específicas do seu projeto.
+Licença MIT.

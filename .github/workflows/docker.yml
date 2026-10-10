@@ -1,0 +1,45 @@
+name: Build e teste da imagem
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Construir a imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: cypress-allure:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Conferir versões instaladas
+        run: |
+          docker run --rm --entrypoint sh cypress-allure:test -c \
+            'node --version && npm --version && java -version && allure --version && cypress version'
+
+      - name: Executar o projeto de exemplo na imagem
+        run: docker run --rm -v "$PWD/example":/e2e cypress-allure:test
+
+      - name: Conferir que o relatório Allure foi gerado
+        run: test -f example/allure-report/index.html
+
+      - name: Publicar o relatório
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: example/allure-report/
+          retention-days: 14

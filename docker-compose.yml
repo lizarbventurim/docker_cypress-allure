@@ -1,0 +1,8 @@
+# Uso: docker compose run --rm cypress [argumentos do cypress run]
+services:
+  cypress:
+    build: .
+    image: cypress-allure:latest
+    working_dir: /e2e
+    volumes:
+      - ./example:/e2e
