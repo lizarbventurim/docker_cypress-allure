@@ -4,6 +4,6 @@
   "description": "Projeto mínimo para testar a imagem cypress-allure",
   "devDependencies": {
     "allure-cypress": "^3.13.0",
-    "cypress": "16.1.1"
+    "cypress": "16.2.1"
   }
 }
